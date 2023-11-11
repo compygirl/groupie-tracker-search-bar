@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="../css/style.css" > 
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <title>ARTISTS</title>
+
+</head>
+
+<body>
+
+  <h1>ARTISTS</h1>
+  <h2>Please select your artist</h2>
+  <div>
+      <input type="text" id="searchInput" placeholder="Search..." >
+      <div id="suggestions"></div>
+  </div> 
+  <div id="slideContainer">
+    <ul id ="artistList">
+      {{range .}}
+      <li>
+        <a href="/artist?id={{.Id}}">
+          <img src="{{.Image}}" alt="{{.Name}}">
+        </a>
+        <h2> {{.Name}}</h2>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+ 
+  <script>
+    const searchInput = document.getElementById("searchInput");
+    const suggestionsContainer = document.getElementById("suggestions");
+    const artistList = document.getElementById("artistList");
+    var flag = false
+    const list000 = document.getElementById("slideContainer");
+    const copyArtistList = artistList.cloneNode(true).innerHTML;
+    const images = list000.getElementsByTagName("img");
+    const image2 = [...images];
+    searchInput.addEventListener("input", () => {
+        const searchTerm = searchInput.value;
+        fetchSuggestions(searchTerm);
+    });
+
+    function fetchSuggestions(searchTerm) {
+
+        if (searchTerm.trim() === "") {
+            suggestionsContainer.innerHTML = "";
+            artistList.innerHTML = copyArtistList;
+            return;
+        }
+        // Send request to the backend to get suggestions
+        fetch(`/search?searchTerm=${searchTerm}`)
+            .then(response => response.json())
+            .then(data => displaySuggestions(data))
+            .catch(error => console.error(error));
+    }
+
+    function displaySuggestions(suggestions) {
+       //console.log(suggestions);
+       if (flag) {
+        flag = false
+        suggestionsContainer.innerHTML = "";
+       } else  {
+        if (suggestions["suggestions"].length < 1) {
+        console.log("len is zero");
+        suggestionsContainer.innerHTML = ""
+
+        const notFoundElement = document.createElement("div");
+        notFoundElement.textContent = "NOT FOUND ----FUCK OFFFFFFF!!!!!!:DDDD";
+        artistList.innerHTML = "";
+        artistList.appendChild(notFoundElement);
+        return
+      }
+        suggestionsContainer.innerHTML = "";
+        for (let suggestion of suggestions["suggestions"]) {
+            const suggestionDiv = document.createElement("div");
+            suggestionDiv.classList.add("suggestion");
+            suggestionDiv.textContent = suggestion;
+            suggestionDiv.addEventListener("click", () => {
+                const startIndex = suggestion.indexOf("-");
+                const trimmedStr = startIndex !== -1 ? suggestion.substring(0, startIndex) : suggestion;
+                searchInput.value = trimmedStr;
+                suggestionsContainer.innerHTML = "";
+                flag = true;
+                fetchSuggestions(trimmedStr)
+            });
+            suggestionsContainer.appendChild(suggestionDiv);    
+        }
+       }
+        
+        // Repopulate "setContainer" with "set" data
+        artistList.innerHTML = "";
+        for (let key in suggestions["set"]) {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            const img = document.createElement("img");
+            const h2 = document.createElement("h2");
+
+            a.href = "/artist?id=" + key;
+            img.src = image2[key-1].getAttribute("src");
+            h2.textContent = suggestions["set"].key;
+
+            a.appendChild(img);
+            a.appendChild(h2);
+            li.appendChild(a);
+            artistList.appendChild(li);
+         }
+    }
+  </script>
+</body>
+
+</html>
